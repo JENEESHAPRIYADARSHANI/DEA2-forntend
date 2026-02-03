@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -12,83 +15,94 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Factory,
   Plus,
   Clock,
   CheckCircle2,
   AlertCircle,
   Package,
-  Users,
-  Calendar,
   TrendingUp,
+  ChevronDown,
+  Pencil,
 } from "lucide-react";
 
-const productionBatches = [
+interface ProductionBatch {
+  id: string;
+  product: string;
+  quantity: number;
+  startDate: string;
+  endDate: string;
+  status: "planned" | "in_progress" | "completed";
+}
+
+const initialBatches: ProductionBatch[] = [
   {
     id: "PB-001",
     product: "Premium Leather Tote",
     quantity: 150,
-    completed: 120,
     startDate: "2024-01-15",
-    dueDate: "2024-01-25",
+    endDate: "2024-01-25",
     status: "in_progress",
-    workers: 4,
-    materials: "Leather, Thread, Zipper",
   },
   {
     id: "PB-002",
     product: "Canvas Messenger Bag",
     quantity: 200,
-    completed: 200,
     startDate: "2024-01-10",
-    dueDate: "2024-01-20",
+    endDate: "2024-01-20",
     status: "completed",
-    workers: 5,
-    materials: "Canvas, Cotton Strap, Buckle",
   },
   {
     id: "PB-003",
     product: "Executive Briefcase",
     quantity: 75,
-    completed: 30,
     startDate: "2024-01-18",
-    dueDate: "2024-01-30",
+    endDate: "2024-01-30",
     status: "in_progress",
-    workers: 3,
-    materials: "Leather, Metal Frame, Lock",
   },
   {
     id: "PB-004",
     product: "Sports Duffel Bag",
     quantity: 100,
-    completed: 0,
     startDate: "2024-01-22",
-    dueDate: "2024-02-05",
-    status: "pending",
-    workers: 0,
-    materials: "Nylon, Polyester Lining, Zipper",
+    endDate: "2024-02-05",
+    status: "planned",
   },
   {
     id: "PB-005",
     product: "Laptop Backpack",
     quantity: 180,
-    completed: 180,
     startDate: "2024-01-05",
-    dueDate: "2024-01-18",
+    endDate: "2024-01-18",
     status: "completed",
-    workers: 6,
-    materials: "Polyester, Foam Padding, Buckle",
   },
   {
     id: "PB-006",
     product: "Ladies Clutch Purse",
     quantity: 250,
-    completed: 100,
     startDate: "2024-01-20",
-    dueDate: "2024-02-01",
+    endDate: "2024-02-01",
     status: "in_progress",
-    workers: 4,
-    materials: "Satin, Sequins, Clasp",
   },
 ];
 
@@ -108,11 +122,11 @@ const getStatusBadge = (status: string) => {
           In Progress
         </Badge>
       );
-    case "pending":
+    case "planned":
       return (
         <Badge className="bg-warning/20 text-warning border-warning/30">
           <AlertCircle className="h-3 w-3 mr-1" />
-          Pending
+          Planned
         </Badge>
       );
     default:
@@ -120,11 +134,110 @@ const getStatusBadge = (status: string) => {
   }
 };
 
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case "completed":
+      return "Completed";
+    case "in_progress":
+      return "In Progress";
+    case "planned":
+      return "Planned";
+    default:
+      return status;
+  }
+};
+
 const Production = () => {
-  const totalBatches = productionBatches.length;
-  const completedBatches = productionBatches.filter(b => b.status === "completed").length;
-  const inProgressBatches = productionBatches.filter(b => b.status === "in_progress").length;
-  const totalUnitsProduced = productionBatches.reduce((sum, b) => sum + b.completed, 0);
+  const [batches, setBatches] = useState<ProductionBatch[]>(initialBatches);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingBatch, setEditingBatch] = useState<ProductionBatch | null>(null);
+  const [formData, setFormData] = useState({
+    product: "",
+    quantity: "",
+    startDate: "",
+    endDate: "",
+    status: "planned" as "planned" | "in_progress" | "completed",
+  });
+
+  const totalBatches = batches.length;
+  const completedBatches = batches.filter((b) => b.status === "completed").length;
+  const inProgressBatches = batches.filter((b) => b.status === "in_progress").length;
+  const plannedBatches = batches.filter((b) => b.status === "planned").length;
+
+  const resetForm = () => {
+    setFormData({
+      product: "",
+      quantity: "",
+      startDate: "",
+      endDate: "",
+      status: "planned",
+    });
+    setEditingBatch(null);
+  };
+
+  const handleOpenDialog = (batch?: ProductionBatch) => {
+    if (batch) {
+      setEditingBatch(batch);
+      setFormData({
+        product: batch.product,
+        quantity: batch.quantity.toString(),
+        startDate: batch.startDate,
+        endDate: batch.endDate,
+        status: batch.status,
+      });
+    } else {
+      resetForm();
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    resetForm();
+  };
+
+  const handleSubmit = () => {
+    if (!formData.product || !formData.quantity || !formData.startDate || !formData.endDate) {
+      return;
+    }
+
+    if (editingBatch) {
+      setBatches((prev) =>
+        prev.map((batch) =>
+          batch.id === editingBatch.id
+            ? {
+                ...batch,
+                product: formData.product,
+                quantity: parseInt(formData.quantity),
+                startDate: formData.startDate,
+                endDate: formData.endDate,
+                status: formData.status,
+              }
+            : batch
+        )
+      );
+    } else {
+      const newBatch: ProductionBatch = {
+        id: `PB-${String(batches.length + 1).padStart(3, "0")}`,
+        product: formData.product,
+        quantity: parseInt(formData.quantity),
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        status: formData.status,
+      };
+      setBatches((prev) => [...prev, newBatch]);
+    }
+
+    handleCloseDialog();
+  };
+
+  const handleUpdateStatus = (batchId: string, newStatus: "planned" | "in_progress" | "completed") => {
+    setBatches((prev) =>
+      prev.map((batch) =>
+        batch.id === batchId ? { ...batch, status: newStatus } : batch
+      )
+    );
+  };
 
   return (
     <DashboardLayout
@@ -142,6 +255,20 @@ const Production = () => {
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
                 <Factory className="h-6 w-6 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Planned</p>
+                <p className="text-3xl font-bold text-foreground">{plannedBatches}</p>
+              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-warning/10">
+                <AlertCircle className="h-6 w-6 text-warning" />
               </div>
             </div>
           </CardContent>
@@ -174,20 +301,6 @@ const Production = () => {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="border-border bg-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Units Produced</p>
-                <p className="text-3xl font-bold text-foreground">{totalUnitsProduced}</p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-warning/10">
-                <Package className="h-6 w-6 text-warning" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Production Batches Table */}
@@ -196,7 +309,7 @@ const Production = () => {
           <CardTitle className="font-display text-lg font-semibold">
             Production Batches
           </CardTitle>
-          <Button className="btn-gradient">
+          <Button className="btn-gradient" onClick={() => handleOpenDialog()}>
             <Plus className="h-4 w-4 mr-2" />
             New Batch
           </Button>
@@ -207,63 +320,67 @@ const Production = () => {
               <TableRow className="border-border">
                 <TableHead className="text-muted-foreground">Batch ID</TableHead>
                 <TableHead className="text-muted-foreground">Product</TableHead>
-                <TableHead className="text-muted-foreground">Progress</TableHead>
-                <TableHead className="text-muted-foreground">Timeline</TableHead>
-                <TableHead className="text-muted-foreground">Workers</TableHead>
-                <TableHead className="text-muted-foreground">Materials</TableHead>
+                <TableHead className="text-muted-foreground">Quantity</TableHead>
+                <TableHead className="text-muted-foreground">Start Date</TableHead>
+                <TableHead className="text-muted-foreground">End Date</TableHead>
                 <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {productionBatches.map((batch) => {
-                const progress = Math.round((batch.completed / batch.quantity) * 100);
-                return (
-                  <TableRow key={batch.id} className="border-border">
-                    <TableCell className="font-medium text-foreground">
-                      {batch.id}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                          <Package className="h-5 w-5 text-primary" />
-                        </div>
-                        <span className="font-medium text-foreground">{batch.product}</span>
+              {batches.map((batch) => (
+                <TableRow key={batch.id} className="border-border">
+                  <TableCell className="font-medium text-foreground">
+                    {batch.id}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <Package className="h-5 w-5 text-primary" />
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="w-32">
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-muted-foreground">
-                            {batch.completed}/{batch.quantity}
-                          </span>
-                          <span className="font-medium text-foreground">{progress}%</span>
-                        </div>
-                        <Progress value={progress} className="h-2" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{batch.startDate}</span>
-                        <span>→</span>
-                        <span>{batch.dueDate}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-foreground">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{batch.workers}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground max-w-[150px] truncate block">
-                        {batch.materials}
-                      </span>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(batch.status)}</TableCell>
-                  </TableRow>
-                );
-              })}
+                      <span className="font-medium text-foreground">{batch.product}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-foreground">{batch.quantity}</TableCell>
+                  <TableCell className="text-muted-foreground">{batch.startDate}</TableCell>
+                  <TableCell className="text-muted-foreground">{batch.endDate}</TableCell>
+                  <TableCell>{getStatusBadge(batch.status)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            Status
+                            <ChevronDown className="h-4 w-4 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(batch.id, "planned")}>
+                            <AlertCircle className="h-4 w-4 mr-2 text-warning" />
+                            Planned
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(batch.id, "in_progress")}>
+                            <Clock className="h-4 w-4 mr-2 text-info" />
+                            In Progress
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(batch.id, "completed")}>
+                            <CheckCircle2 className="h-4 w-4 mr-2 text-success" />
+                            Completed
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenDialog(batch)}
+                      >
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -285,13 +402,13 @@ const Production = () => {
                 <span className="font-semibold text-success">92%</span>
               </div>
               <Progress value={92} className="h-2" />
-              
+
               <div className="flex items-center justify-between mt-4">
                 <span className="text-muted-foreground">Quality Pass Rate</span>
                 <span className="font-semibold text-success">98%</span>
               </div>
               <Progress value={98} className="h-2" />
-              
+
               <div className="flex items-center justify-between mt-4">
                 <span className="text-muted-foreground">Resource Utilization</span>
                 <span className="font-semibold text-info">85%</span>
@@ -330,6 +447,80 @@ const Production = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add/Edit Batch Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingBatch ? "Edit Batch" : "Add New Batch"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="product">Product</Label>
+              <Input
+                id="product"
+                placeholder="Enter product name"
+                value={formData.product}
+                onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                type="number"
+                placeholder="Enter quantity"
+                value={formData.quantity}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value: "planned" | "in_progress" | "completed") =>
+                  setFormData({ ...formData, status: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="planned">Planned</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseDialog}>
+              Cancel
+            </Button>
+            <Button className="btn-gradient" onClick={handleSubmit}>
+              {editingBatch ? "Save Changes" : "Add Batch"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
