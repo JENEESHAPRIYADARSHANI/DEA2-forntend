@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -37,6 +38,13 @@ import {
   Link2,
   ToggleLeft,
   ToggleRight,
+  Users,
+  Boxes,
+  DollarSign,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Search,
 } from "lucide-react";
 
 // Types
@@ -170,6 +178,7 @@ export default function Suppliers() {
     address: "",
     status: "active" as "active" | "inactive",
   });
+  const [supplierSearch, setSupplierSearch] = useState("");
 
   // Material State
   const [materials, setMaterials] = useState<Material[]>(initialMaterials);
@@ -183,6 +192,7 @@ export default function Suppliers() {
     reorderLevel: 0,
     status: "active" as "active" | "disabled",
   });
+  const [materialSearch, setMaterialSearch] = useState("");
 
   // Mapping State
   const [mappings, setMappings] = useState<SupplierMaterialMapping[]>(initialMappings);
@@ -194,6 +204,25 @@ export default function Suppliers() {
     supplyPrice: 0,
     leadTimeDays: 0,
   });
+
+  // Stats
+  const activeSuppliers = suppliers.filter((s) => s.status === "active").length;
+  const activeMaterials = materials.filter((m) => m.status === "active").length;
+  const totalMappings = mappings.length;
+  const avgLeadTime = mappings.length > 0 
+    ? Math.round(mappings.reduce((sum, m) => sum + m.leadTimeDays, 0) / mappings.length) 
+    : 0;
+
+  // Filtered data
+  const filteredSuppliers = suppliers.filter((s) =>
+    s.name.toLowerCase().includes(supplierSearch.toLowerCase()) ||
+    s.email.toLowerCase().includes(supplierSearch.toLowerCase())
+  );
+
+  const filteredMaterials = materials.filter((m) =>
+    m.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
+    m.type.toLowerCase().includes(materialSearch.toLowerCase())
+  );
 
   // Supplier Handlers
   const openSupplierDialog = (supplier?: Supplier) => {
@@ -338,232 +367,454 @@ export default function Suppliers() {
 
   return (
     <DashboardLayout
-      title="Suppliers"
-      subtitle="Manage suppliers, materials, and their relationships"
+      title="Suppliers and Materials"
+      subtitle="Manage your supply chain, materials inventory, and vendor relationships"
     >
+      {/* Summary Stats */}
+      <div className="grid gap-4 md:grid-cols-4 mb-6">
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Active Suppliers</p>
+                <p className="text-3xl font-bold text-primary">{activeSuppliers}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Truck className="h-6 w-6 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Active Materials</p>
+                <p className="text-3xl font-bold text-accent">{activeMaterials}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <Package className="h-6 w-6 text-accent" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Mappings</p>
+                <p className="text-3xl font-bold text-success">{totalMappings}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center">
+                <Link2 className="h-6 w-6 text-success" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Avg Lead Time</p>
+                <p className="text-3xl font-bold text-warning">{avgLeadTime} days</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
+                <Clock className="h-6 w-6 text-warning" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs defaultValue="suppliers" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[500px]">
-          <TabsTrigger value="suppliers" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[600px] h-12 p-1 bg-muted/50">
+          <TabsTrigger 
+            value="suppliers" 
+            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+          >
             <Truck className="h-4 w-4" />
-            Suppliers
+            <span className="hidden sm:inline">Suppliers</span>
           </TabsTrigger>
-          <TabsTrigger value="materials" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="materials" 
+            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+          >
             <Package className="h-4 w-4" />
-            Materials
+            <span className="hidden sm:inline">Materials</span>
           </TabsTrigger>
-          <TabsTrigger value="mapping" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="mapping" 
+            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+          >
             <Link2 className="h-4 w-4" />
-            Mapping
+            <span className="hidden sm:inline">Supplier–Material</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Suppliers Tab */}
-        <TabsContent value="suppliers">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Supplier Management</CardTitle>
-              <Button onClick={() => openSupplierDialog()}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Supplier
-              </Button>
+        <TabsContent value="suppliers" className="space-y-4">
+          <Card className="shadow-lg border-border/50">
+            <CardHeader className="bg-muted/30 border-b">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Truck className="h-5 w-5 text-primary" />
+                    Supplier Management
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Add and manage your supplier network
+                  </CardDescription>
+                </div>
+                <Button onClick={() => openSupplierDialog()} className="btn-gradient">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Supplier
+                </Button>
+              </div>
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search suppliers by name or email..."
+                  value={supplierSearch}
+                  onChange={(e) => setSupplierSearch(e.target.value)}
+                  className="pl-10 max-w-md"
+                />
+              </div>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {suppliers.map((supplier) => (
-                    <TableRow key={supplier.id}>
-                      <TableCell className="font-medium">{supplier.id}</TableCell>
-                      <TableCell>{supplier.name}</TableCell>
-                      <TableCell>{supplier.email}</TableCell>
-                      <TableCell>{supplier.phone}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{supplier.address}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={supplier.status === "active" ? "default" : "secondary"}
-                        >
-                          {supplier.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleSupplierStatus(supplier.id)}
-                          >
-                            {supplier.status === "active" ? (
-                              <ToggleRight className="h-4 w-4" />
-                            ) : (
-                              <ToggleLeft className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openSupplierDialog(supplier)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => deleteSupplier(supplier.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/20 hover:bg-muted/20">
+                      <TableHead className="font-semibold">ID</TableHead>
+                      <TableHead className="font-semibold">Supplier Name</TableHead>
+                      <TableHead className="font-semibold">Contact</TableHead>
+                      <TableHead className="font-semibold">Address</TableHead>
+                      <TableHead className="font-semibold">Status</TableHead>
+                      <TableHead className="font-semibold text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSuppliers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                          <Truck className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                          <p>No suppliers found</p>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredSuppliers.map((supplier) => (
+                        <TableRow key={supplier.id} className="group hover:bg-muted/50 transition-colors">
+                          <TableCell className="font-mono text-sm text-muted-foreground">{supplier.id}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <span className="text-sm font-semibold text-primary">
+                                  {supplier.name.charAt(0)}
+                                </span>
+                              </div>
+                              <span className="font-medium">{supplier.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <p className="text-sm">{supplier.email}</p>
+                              <p className="text-xs text-muted-foreground">{supplier.phone}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-[200px]">
+                            <p className="truncate text-sm text-muted-foreground">{supplier.address}</p>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={
+                                supplier.status === "active"
+                                  ? "bg-success/10 text-success border-success/20 hover:bg-success/20"
+                                  : "bg-muted text-muted-foreground border-border hover:bg-muted"
+                              }
+                            >
+                              {supplier.status === "active" ? (
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                              ) : (
+                                <XCircle className="h-3 w-3 mr-1" />
+                              )}
+                              {supplier.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleSupplierStatus(supplier.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                {supplier.status === "active" ? (
+                                  <ToggleRight className="h-4 w-4 text-success" />
+                                ) : (
+                                  <ToggleLeft className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openSupplierDialog(supplier)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => deleteSupplier(supplier.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Materials Tab */}
-        <TabsContent value="materials">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Material Management</CardTitle>
-              <Button onClick={() => openMaterialDialog()}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Material
-              </Button>
+        <TabsContent value="materials" className="space-y-4">
+          <Card className="shadow-lg border-border/50">
+            <CardHeader className="bg-muted/30 border-b">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-accent" />
+                    Material Inventory
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Track and manage raw materials and components
+                  </CardDescription>
+                </div>
+                <Button onClick={() => openMaterialDialog()} className="btn-gradient">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Material
+                </Button>
+              </div>
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search materials by name or type..."
+                  value={materialSearch}
+                  onChange={(e) => setMaterialSearch(e.target.value)}
+                  className="pl-10 max-w-md"
+                />
+              </div>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Material Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Unit Price</TableHead>
-                    <TableHead>Reorder Level</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {materials.map((material) => (
-                    <TableRow key={material.id}>
-                      <TableCell className="font-medium">{material.id}</TableCell>
-                      <TableCell>{material.name}</TableCell>
-                      <TableCell>{material.type}</TableCell>
-                      <TableCell>{material.unit}</TableCell>
-                      <TableCell>${material.unitPrice.toFixed(2)}</TableCell>
-                      <TableCell>{material.reorderLevel}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={material.status === "active" ? "default" : "secondary"}
-                        >
-                          {material.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleMaterialStatus(material.id)}
-                          >
-                            {material.status === "active" ? (
-                              <ToggleRight className="h-4 w-4" />
-                            ) : (
-                              <ToggleLeft className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openMaterialDialog(material)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => deleteMaterial(material.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/20 hover:bg-muted/20">
+                      <TableHead className="font-semibold">ID</TableHead>
+                      <TableHead className="font-semibold">Material</TableHead>
+                      <TableHead className="font-semibold">Type</TableHead>
+                      <TableHead className="font-semibold">Unit</TableHead>
+                      <TableHead className="font-semibold">Unit Price</TableHead>
+                      <TableHead className="font-semibold">Reorder Level</TableHead>
+                      <TableHead className="font-semibold">Status</TableHead>
+                      <TableHead className="font-semibold text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredMaterials.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                          <Package className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                          <p>No materials found</p>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredMaterials.map((material) => (
+                        <TableRow key={material.id} className="group hover:bg-muted/50 transition-colors">
+                          <TableCell className="font-mono text-sm text-muted-foreground">{material.id}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                                <Boxes className="h-5 w-5 text-accent" />
+                              </div>
+                              <span className="font-medium">{material.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="font-normal">
+                              {material.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{material.unit}</TableCell>
+                          <TableCell>
+                            <span className="font-semibold text-success">${material.unitPrice.toFixed(2)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-warning font-medium">{material.reorderLevel}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={
+                                material.status === "active"
+                                  ? "bg-success/10 text-success border-success/20 hover:bg-success/20"
+                                  : "bg-muted text-muted-foreground border-border hover:bg-muted"
+                              }
+                            >
+                              {material.status === "active" ? (
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                              ) : (
+                                <XCircle className="h-3 w-3 mr-1" />
+                              )}
+                              {material.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleMaterialStatus(material.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                {material.status === "active" ? (
+                                  <ToggleRight className="h-4 w-4 text-success" />
+                                ) : (
+                                  <ToggleLeft className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openMaterialDialog(material)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => deleteMaterial(material.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Mapping Tab */}
-        <TabsContent value="mapping">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Supplier–Material Mapping</CardTitle>
-              <Button onClick={() => openMappingDialog()}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Mapping
-              </Button>
+        <TabsContent value="mapping" className="space-y-4">
+          <Card className="shadow-lg border-border/50">
+            <CardHeader className="bg-muted/30 border-b">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Link2 className="h-5 w-5 text-success" />
+                    Supplier–Material Relationships
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Define which suppliers provide which materials with pricing and lead times
+                  </CardDescription>
+                </div>
+                <Button onClick={() => openMappingDialog()} className="btn-gradient">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Mapping
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Material</TableHead>
-                    <TableHead>Supply Price</TableHead>
-                    <TableHead>Lead Time (Days)</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mappings.map((mapping) => (
-                    <TableRow key={mapping.id}>
-                      <TableCell className="font-medium">{mapping.id}</TableCell>
-                      <TableCell>{getSupplierName(mapping.supplierId)}</TableCell>
-                      <TableCell>{getMaterialName(mapping.materialId)}</TableCell>
-                      <TableCell>${mapping.supplyPrice.toFixed(2)}</TableCell>
-                      <TableCell>{mapping.leadTimeDays} days</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openMappingDialog(mapping)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => deleteMapping(mapping.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/20 hover:bg-muted/20">
+                      <TableHead className="font-semibold">ID</TableHead>
+                      <TableHead className="font-semibold">Supplier</TableHead>
+                      <TableHead className="font-semibold">Material</TableHead>
+                      <TableHead className="font-semibold">Supply Price</TableHead>
+                      <TableHead className="font-semibold">Lead Time</TableHead>
+                      <TableHead className="font-semibold text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {mappings.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                          <Link2 className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                          <p>No mappings found</p>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      mappings.map((mapping) => (
+                        <TableRow key={mapping.id} className="group hover:bg-muted/50 transition-colors">
+                          <TableCell className="font-mono text-sm text-muted-foreground">{mapping.id}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Truck className="h-4 w-4 text-primary" />
+                              </div>
+                              <span className="font-medium">{getSupplierName(mapping.supplierId)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                                <Package className="h-4 w-4 text-accent" />
+                              </div>
+                              <span>{getMaterialName(mapping.materialId)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4 text-success" />
+                              <span className="font-semibold text-success">{mapping.supplyPrice.toFixed(2)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4 text-warning" />
+                              <span className="font-medium text-warning">{mapping.leadTimeDays} days</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openMappingDialog(mapping)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => deleteMapping(mapping.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -571,46 +822,52 @@ export default function Suppliers() {
 
       {/* Supplier Dialog */}
       <Dialog open={supplierDialogOpen} onOpenChange={setSupplierDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-primary" />
               {editingSupplier ? "Edit Supplier" : "Add New Supplier"}
             </DialogTitle>
+            <DialogDescription>
+              {editingSupplier ? "Update supplier information" : "Fill in the details to add a new supplier"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="supplier-name">Name</Label>
+              <Label htmlFor="supplier-name">Supplier Name</Label>
               <Input
                 id="supplier-name"
                 value={supplierForm.name}
                 onChange={(e) =>
                   setSupplierForm({ ...supplierForm, name: e.target.value })
                 }
-                placeholder="Supplier name"
+                placeholder="Enter supplier name"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="supplier-email">Email</Label>
-              <Input
-                id="supplier-email"
-                type="email"
-                value={supplierForm.email}
-                onChange={(e) =>
-                  setSupplierForm({ ...supplierForm, email: e.target.value })
-                }
-                placeholder="email@example.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="supplier-phone">Phone</Label>
-              <Input
-                id="supplier-phone"
-                value={supplierForm.phone}
-                onChange={(e) =>
-                  setSupplierForm({ ...supplierForm, phone: e.target.value })
-                }
-                placeholder="+1 555-0100"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="supplier-email">Email</Label>
+                <Input
+                  id="supplier-email"
+                  type="email"
+                  value={supplierForm.email}
+                  onChange={(e) =>
+                    setSupplierForm({ ...supplierForm, email: e.target.value })
+                  }
+                  placeholder="email@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="supplier-phone">Phone</Label>
+                <Input
+                  id="supplier-phone"
+                  value={supplierForm.phone}
+                  onChange={(e) =>
+                    setSupplierForm({ ...supplierForm, phone: e.target.value })
+                  }
+                  placeholder="+1 555-0100"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="supplier-address">Address</Label>
@@ -635,8 +892,18 @@ export default function Suppliers() {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="active">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      Active
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    <div className="flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-muted-foreground" />
+                      Inactive
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -645,7 +912,7 @@ export default function Suppliers() {
             <Button variant="outline" onClick={() => setSupplierDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSupplierSubmit}>
+            <Button onClick={handleSupplierSubmit} className="btn-gradient">
               {editingSupplier ? "Update" : "Add"} Supplier
             </Button>
           </DialogFooter>
@@ -654,11 +921,15 @@ export default function Suppliers() {
 
       {/* Material Dialog */}
       <Dialog open={materialDialogOpen} onOpenChange={setMaterialDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-accent" />
               {editingMaterial ? "Edit Material" : "Add New Material"}
             </DialogTitle>
+            <DialogDescription>
+              {editingMaterial ? "Update material information" : "Fill in the details to add a new material"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -669,55 +940,59 @@ export default function Suppliers() {
                 onChange={(e) =>
                   setMaterialForm({ ...materialForm, name: e.target.value })
                 }
-                placeholder="Material name"
+                placeholder="Enter material name"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="material-type">Type</Label>
-              <Input
-                id="material-type"
-                value={materialForm.type}
-                onChange={(e) =>
-                  setMaterialForm({ ...materialForm, type: e.target.value })
-                }
-                placeholder="e.g., Leather, Fabric, Hardware"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="material-type">Type</Label>
+                <Input
+                  id="material-type"
+                  value={materialForm.type}
+                  onChange={(e) =>
+                    setMaterialForm({ ...materialForm, type: e.target.value })
+                  }
+                  placeholder="e.g., Leather, Fabric"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="material-unit">Unit</Label>
+                <Input
+                  id="material-unit"
+                  value={materialForm.unit}
+                  onChange={(e) =>
+                    setMaterialForm({ ...materialForm, unit: e.target.value })
+                  }
+                  placeholder="e.g., sq ft, meter"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="material-unit">Unit</Label>
-              <Input
-                id="material-unit"
-                value={materialForm.unit}
-                onChange={(e) =>
-                  setMaterialForm({ ...materialForm, unit: e.target.value })
-                }
-                placeholder="e.g., sq ft, meter, piece"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="material-price">Unit Price ($)</Label>
-              <Input
-                id="material-price"
-                type="number"
-                step="0.01"
-                value={materialForm.unitPrice}
-                onChange={(e) =>
-                  setMaterialForm({ ...materialForm, unitPrice: parseFloat(e.target.value) || 0 })
-                }
-                placeholder="0.00"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="material-reorder">Reorder Level</Label>
-              <Input
-                id="material-reorder"
-                type="number"
-                value={materialForm.reorderLevel}
-                onChange={(e) =>
-                  setMaterialForm({ ...materialForm, reorderLevel: parseInt(e.target.value) || 0 })
-                }
-                placeholder="0"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="material-price">Unit Price ($)</Label>
+                <Input
+                  id="material-price"
+                  type="number"
+                  step="0.01"
+                  value={materialForm.unitPrice}
+                  onChange={(e) =>
+                    setMaterialForm({ ...materialForm, unitPrice: parseFloat(e.target.value) || 0 })
+                  }
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="material-reorder">Reorder Level</Label>
+                <Input
+                  id="material-reorder"
+                  type="number"
+                  value={materialForm.reorderLevel}
+                  onChange={(e) =>
+                    setMaterialForm({ ...materialForm, reorderLevel: parseInt(e.target.value) || 0 })
+                  }
+                  placeholder="0"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="material-status">Status</Label>
@@ -731,8 +1006,18 @@ export default function Suppliers() {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="disabled">Disabled</SelectItem>
+                  <SelectItem value="active">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      Active
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="disabled">
+                    <div className="flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-muted-foreground" />
+                      Disabled
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -741,7 +1026,7 @@ export default function Suppliers() {
             <Button variant="outline" onClick={() => setMaterialDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleMaterialSubmit}>
+            <Button onClick={handleMaterialSubmit} className="btn-gradient">
               {editingMaterial ? "Update" : "Add"} Material
             </Button>
           </DialogFooter>
@@ -750,11 +1035,15 @@ export default function Suppliers() {
 
       {/* Mapping Dialog */}
       <Dialog open={mappingDialogOpen} onOpenChange={setMappingDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-success" />
               {editingMapping ? "Edit Mapping" : "Add Supplier-Material Mapping"}
             </DialogTitle>
+            <DialogDescription>
+              {editingMapping ? "Update the supplier-material relationship" : "Link a supplier to a material with pricing"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -773,7 +1062,10 @@ export default function Suppliers() {
                     .filter((s) => s.status === "active")
                     .map((supplier) => (
                       <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
+                        <div className="flex items-center gap-2">
+                          <Truck className="h-4 w-4 text-primary" />
+                          {supplier.name}
+                        </div>
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -795,43 +1087,48 @@ export default function Suppliers() {
                     .filter((m) => m.status === "active")
                     .map((material) => (
                       <SelectItem key={material.id} value={material.id}>
-                        {material.name}
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-accent" />
+                          {material.name}
+                        </div>
                       </SelectItem>
                     ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="mapping-price">Supply Price ($)</Label>
-              <Input
-                id="mapping-price"
-                type="number"
-                step="0.01"
-                value={mappingForm.supplyPrice}
-                onChange={(e) =>
-                  setMappingForm({ ...mappingForm, supplyPrice: parseFloat(e.target.value) || 0 })
-                }
-                placeholder="0.00"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mapping-leadtime">Lead Time (Days)</Label>
-              <Input
-                id="mapping-leadtime"
-                type="number"
-                value={mappingForm.leadTimeDays}
-                onChange={(e) =>
-                  setMappingForm({ ...mappingForm, leadTimeDays: parseInt(e.target.value) || 0 })
-                }
-                placeholder="0"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="mapping-price">Supply Price ($)</Label>
+                <Input
+                  id="mapping-price"
+                  type="number"
+                  step="0.01"
+                  value={mappingForm.supplyPrice}
+                  onChange={(e) =>
+                    setMappingForm({ ...mappingForm, supplyPrice: parseFloat(e.target.value) || 0 })
+                  }
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mapping-leadtime">Lead Time (Days)</Label>
+                <Input
+                  id="mapping-leadtime"
+                  type="number"
+                  value={mappingForm.leadTimeDays}
+                  onChange={(e) =>
+                    setMappingForm({ ...mappingForm, leadTimeDays: parseInt(e.target.value) || 0 })
+                  }
+                  placeholder="0"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMappingDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleMappingSubmit}>
+            <Button onClick={handleMappingSubmit} className="btn-gradient">
               {editingMapping ? "Update" : "Add"} Mapping
             </Button>
           </DialogFooter>
