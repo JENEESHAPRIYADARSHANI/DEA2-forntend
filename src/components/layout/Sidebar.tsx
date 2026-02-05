@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -13,23 +13,32 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
   { name: "Products", href: "/products", icon: Package },
   { name: "Inventory", href: "/inventory", icon: Boxes },
   { name: "Production", href: "/production", icon: Factory },
-  { name: "Suppliers", href: "/suppliers", icon: Truck },
+  { name: "Suppliers and Materials", href: "/suppliers", icon: Truck },
   { name: "Payments", href: "/payments", icon: CreditCard },
 ];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <aside
@@ -40,7 +49,7 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-20 items-center justify-between px-4 border-b border-sidebar-border">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/admin" className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
             <Star className="h-5 w-5 text-primary-foreground" />
           </div>
@@ -80,6 +89,12 @@ export function Sidebar() {
 
       {/* Settings & Collapse */}
       <div className="border-t border-sidebar-border p-3">
+        {!collapsed && user && (
+          <div className="px-3 py-2 mb-2">
+            <p className="text-sm font-medium text-sidebar-foreground">{user.name}</p>
+            <p className="text-xs text-sidebar-foreground/60">{user.email}</p>
+          </div>
+        )}
         <Link
           to="/settings"
           className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
@@ -87,6 +102,13 @@ export function Sidebar() {
           <Settings className="h-5 w-5 flex-shrink-0" />
           {!collapsed && <span>Settings</span>}
         </Link>
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-colors"
+        >
+          <LogOut className="h-5 w-5 flex-shrink-0" />
+          {!collapsed && <span>Logout</span>}
+        </button>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
