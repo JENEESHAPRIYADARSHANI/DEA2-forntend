@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { QuotationProvider } from "@/contexts/QuotationContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Admin Pages
@@ -18,11 +19,16 @@ import Suppliers from "./pages/Suppliers";
 // Auth Pages
 import Login from "./pages/Login";
 
+// Admin Quotations
+import AdminQuotations from "./pages/AdminQuotations";
+
 // User Pages
 import Shop from "./pages/user/Shop";
 import Cart from "./pages/user/Cart";
 import UserOrders from "./pages/user/Orders";
 import UserProfile from "./pages/user/Profile";
+import RequestQuotation from "./pages/user/RequestQuotation";
+import UserQuotations from "./pages/user/Quotations";
 
 import NotFound from "./pages/NotFound";
 
@@ -99,6 +105,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/quotations"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminQuotations />
+          </ProtectedRoute>
+        }
+      />
 
       {/* User Routes */}
       <Route
@@ -133,6 +147,22 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/user/request-quotation"
+        element={
+          <ProtectedRoute allowedRoles={["user"]}>
+            <RequestQuotation />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user/quotations"
+        element={
+          <ProtectedRoute allowedRoles={["user"]}>
+            <UserQuotations />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Catch-all */}
       <Route path="*" element={<NotFound />} />
@@ -145,11 +175,13 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <CartProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+          <QuotationProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </QuotationProvider>
         </CartProvider>
       </AuthProvider>
     </TooltipProvider>
