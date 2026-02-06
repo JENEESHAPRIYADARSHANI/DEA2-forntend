@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Star,
   LogOut,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +23,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
+  { name: "Quotations", href: "/admin/quotations", icon: FileText },
   { name: "Products", href: "/products", icon: Package },
   { name: "Inventory", href: "/inventory", icon: Boxes },
   { name: "Production", href: "/production", icon: Factory },
