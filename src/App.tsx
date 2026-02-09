@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { QuotationProvider } from "@/contexts/QuotationContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
+import { PaymentProvider } from "@/contexts/PaymentContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Admin Pages
@@ -17,6 +18,7 @@ import Products from "./pages/Products";
 import Production from "./pages/Production";
 import Suppliers from "./pages/Suppliers";
 import Inventory from "./pages/Inventory";
+import Payments from "./pages/Payments";
 
 // Auth Pages
 import Login from "./pages/Login";
@@ -123,6 +125,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Payments />
+          </ProtectedRoute>
+        }
+      />
 
       {/* User Routes */}
       <Route
@@ -187,11 +197,13 @@ const App = () => (
         <CartProvider>
           <QuotationProvider>
             <InventoryProvider>
+            <PaymentProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
               <AppRoutes />
             </BrowserRouter>
+            </PaymentProvider>
             </InventoryProvider>
           </QuotationProvider>
         </CartProvider>
