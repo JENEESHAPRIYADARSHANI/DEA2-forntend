@@ -6,26 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Plus, Pencil, Trash2, Eye, Search, CreditCard, Wallet,
-  DollarSign, CheckCircle2, XCircle, Clock, RotateCcw, ShieldCheck,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, CreditCard, Wallet } from "lucide-react";
 import { usePayments } from "@/contexts/PaymentContext";
-import { Payment, PaymentStatus, PaymentMethod, SavedPaymentMethod } from "@/types/payment";
-
-const statusConfig: Record<PaymentStatus, { label: string; color: string; icon: typeof Clock }> = {
-  pending: { label: "Pending", color: "bg-warning/10 text-warning border-warning/20", icon: Clock },
-  completed: { label: "Completed", color: "bg-success/10 text-success border-success/20", icon: CheckCircle2 },
-  failed: { label: "Failed", color: "bg-destructive/10 text-destructive border-destructive/20", icon: XCircle },
-};
+import { PaymentMethod, SavedPaymentMethod } from "@/types/payment";
 
 const methodLabels: Record<PaymentMethod, string> = {
   card: "Card",
@@ -34,84 +22,14 @@ const methodLabels: Record<PaymentMethod, string> = {
 };
 
 export default function Payments() {
-  const {
-    payments, savedMethods,
-    addPayment, updatePayment, deletePayment,
-    addSavedMethod, updateSavedMethod, deleteSavedMethod,
-  } = usePayments();
+  const { savedMethods, addSavedMethod, updateSavedMethod, deleteSavedMethod } = usePayments();
 
-  // Payment dialog state
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [viewingPayment, setViewingPayment] = useState<Payment | null>(null);
-  const [paymentForm, setPaymentForm] = useState({
-    orderId: "", customerName: "", amount: 0, method: "card" as PaymentMethod,
-    paymentDate: new Date().toISOString().split("T")[0], status: "pending" as PaymentStatus,
-    transactionRef: "",
-  });
-
-  // Unified search & filters
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-
-  // Saved method dialog
   const [methodDialogOpen, setMethodDialogOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<SavedPaymentMethod | null>(null);
   const [methodForm, setMethodForm] = useState({
     methodType: "card" as PaymentMethod,
     cardHolderName: "", maskedCardNumber: "", expiryDate: "",
   });
-
-  // Stats
-  const totalRevenue = payments.filter((p) => p.status === "completed").reduce((s, p) => s + p.amount, 0);
-  const pendingCount = payments.filter((p) => p.status === "pending").length;
-  const completedCount = payments.filter((p) => p.status === "completed").length;
-  const failedCount = payments.filter((p) => p.status === "failed").length;
-
-  // Filtered payments
-  const filteredPayments = payments.filter((p) => {
-    const matchesSearch =
-      p.id.toLowerCase().includes(search.toLowerCase()) ||
-      p.orderId.toLowerCase().includes(search.toLowerCase()) ||
-      p.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      p.transactionRef.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || p.status === statusFilter;
-    const matchesFrom = !dateFrom || p.paymentDate >= dateFrom;
-    const matchesTo = !dateTo || p.paymentDate <= dateTo;
-    return matchesSearch && matchesStatus && matchesFrom && matchesTo;
-  });
-
-  // Handlers
-  const openPaymentDialog = (payment?: Payment) => {
-    if (payment) {
-      setEditingPayment(payment);
-      setPaymentForm({
-        orderId: payment.orderId, customerName: payment.customerName,
-        amount: payment.amount, method: payment.method,
-        paymentDate: payment.paymentDate, status: payment.status,
-        transactionRef: payment.transactionRef,
-      });
-    } else {
-      setEditingPayment(null);
-      setPaymentForm({
-        orderId: "", customerName: "", amount: 0, method: "card",
-        paymentDate: new Date().toISOString().split("T")[0], status: "pending",
-        transactionRef: `TXN-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-      });
-    }
-    setPaymentDialogOpen(true);
-  };
-
-  const handlePaymentSubmit = () => {
-    if (editingPayment) {
-      updatePayment(editingPayment.id, paymentForm);
-    } else {
-      addPayment(paymentForm);
-    }
-    setPaymentDialogOpen(false);
-  };
 
   const openMethodDialog = (method?: SavedPaymentMethod) => {
     if (method) {
@@ -137,184 +55,7 @@ export default function Payments() {
   };
 
   return (
-    <DashboardLayout title="Payments" subtitle="Manage payments, verify records, and handle payment methods">
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-                <p className="text-3xl font-bold text-primary">${totalRevenue.toLocaleString()}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                <p className="text-3xl font-bold text-success">{completedCount}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-success" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                <p className="text-3xl font-bold text-warning">{pendingCount}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-warning" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-destructive/10 to-destructive/5 border-destructive/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Failed</p>
-                <p className="text-3xl font-bold text-destructive">{failedCount}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                <XCircle className="h-6 w-6 text-destructive" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Payment Management - Single unified table */}
-      <Card className="shadow-lg border-border/50 mb-6">
-        <CardHeader className="bg-muted/30 border-b">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
-                Payment Management
-              </CardTitle>
-              <CardDescription className="mt-1">Record, view, verify, and manage all payments</CardDescription>
-            </div>
-            <Button onClick={() => openPaymentDialog()} className="btn-gradient">
-              <Plus className="h-4 w-4 mr-2" />
-              Record Payment
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search ID, Order, Customer, Ref..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input type="date" placeholder="From" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-            <Input type="date" placeholder="To" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/20 hover:bg-muted/20">
-                  <TableHead className="font-semibold">Payment ID</TableHead>
-                  <TableHead className="font-semibold">Order ID</TableHead>
-                  <TableHead className="font-semibold">Customer</TableHead>
-                  <TableHead className="font-semibold">Amount</TableHead>
-                  <TableHead className="font-semibold">Method</TableHead>
-                  <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Txn Ref</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPayments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
-                      <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                      <p className="font-medium">No payments found</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredPayments.map((payment) => {
-                    const sc = statusConfig[payment.status];
-                    const StatusIcon = sc.icon;
-                    return (
-                      <TableRow key={payment.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="font-mono text-sm font-medium">{payment.id}</TableCell>
-                        <TableCell className="font-mono text-sm">{payment.orderId}</TableCell>
-                        <TableCell className="font-medium">{payment.customerName}</TableCell>
-                        <TableCell className="font-semibold">${payment.amount.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">{methodLabels[payment.method]}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{payment.paymentDate}</TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">{payment.transactionRef}</TableCell>
-                        <TableCell>
-                          <Badge className={`${sc.color} border gap-1`}>
-                            <StatusIcon className="h-3 w-3" />
-                            {sc.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewingPayment(payment)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openPaymentDialog(payment)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            {payment.status === "pending" && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-success hover:text-success" onClick={() => updatePayment(payment.id, { status: "completed" })} title="Verify Payment">
-                                <ShieldCheck className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {payment.status === "completed" ? (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-warning hover:text-warning" onClick={() => updatePayment(payment.id, { status: "pending" })} title="Reverse Payment">
-                                <RotateCcw className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deletePayment(payment.id)} title="Delete Payment">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Saved Payment Methods */}
+    <DashboardLayout title="Payments" subtitle="Manage saved payment methods for customers">
       <Card className="shadow-lg border-border/50">
         <CardHeader className="bg-muted/30 border-b">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -367,105 +108,7 @@ export default function Payments() {
         </CardContent>
       </Card>
 
-      {/* ===== Payment Add/Edit Dialog ===== */}
-      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editingPayment ? "Edit Payment" : "Record New Payment"}</DialogTitle>
-            <DialogDescription>{editingPayment ? "Update payment details below." : "Fill in the details to record a new payment."}</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Order ID</Label>
-                <Input value={paymentForm.orderId} onChange={(e) => setPaymentForm({ ...paymentForm, orderId: e.target.value })} placeholder="ORD-XXX" />
-              </div>
-              <div className="space-y-2">
-                <Label>Amount ($)</Label>
-                <Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: parseFloat(e.target.value) || 0 })} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Customer Name</Label>
-              <Input value={paymentForm.customerName} onChange={(e) => setPaymentForm({ ...paymentForm, customerName: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Payment Method</Label>
-                <Select value={paymentForm.method} onValueChange={(v) => setPaymentForm({ ...paymentForm, method: v as PaymentMethod })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="online_transfer">Online Transfer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={paymentForm.status} onValueChange={(v) => setPaymentForm({ ...paymentForm, status: v as PaymentStatus })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Payment Date</Label>
-                <Input type="date" value={paymentForm.paymentDate} onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Transaction Ref</Label>
-                <Input value={paymentForm.transactionRef} onChange={(e) => setPaymentForm({ ...paymentForm, transactionRef: e.target.value })} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handlePaymentSubmit} className="btn-gradient">{editingPayment ? "Update" : "Record"} Payment</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ===== Payment Detail Dialog ===== */}
-      <Dialog open={!!viewingPayment} onOpenChange={() => setViewingPayment(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Payment Details</DialogTitle>
-            <DialogDescription>Full details for {viewingPayment?.id}</DialogDescription>
-          </DialogHeader>
-          {viewingPayment && (
-            <div className="space-y-4 py-2">
-              {[
-                ["Payment ID", viewingPayment.id],
-                ["Order ID", viewingPayment.orderId],
-                ["Customer", viewingPayment.customerName],
-                ["Amount", `$${viewingPayment.amount.toLocaleString()}`],
-                ["Method", methodLabels[viewingPayment.method]],
-                ["Date", viewingPayment.paymentDate],
-                ["Transaction Ref", viewingPayment.transactionRef],
-              ].map(([label, value]) => (
-                <div key={label} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
-                  <span className="text-sm text-muted-foreground">{label}</span>
-                  <span className="font-medium text-sm">{value}</span>
-                </div>
-              ))}
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <Badge className={`${statusConfig[viewingPayment.status].color} border`}>
-                  {statusConfig[viewingPayment.status].label}
-                </Badge>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* ===== Saved Method Dialog ===== */}
+      {/* Saved Method Dialog */}
       <Dialog open={methodDialogOpen} onOpenChange={setMethodDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
